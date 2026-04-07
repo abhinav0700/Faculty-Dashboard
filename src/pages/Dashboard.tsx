@@ -19,6 +19,7 @@ interface FacultyProfile {
   id: string;
   full_name: string;
   college_id: string | null;
+  department_id: string | null;
 }
 
 interface UserPerformance {
@@ -50,6 +51,7 @@ export default function Dashboard() {
   const [selectedStudent, setSelectedStudent] = useState<StudentRow | null>(null);
   const [facultyProfile, setFacultyProfile] = useState<FacultyProfile | null>(null);
   const [collegeName, setCollegeName] = useState<string | null>(null);
+  const [departmentName, setDepartmentName] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -65,7 +67,7 @@ export default function Dashboard() {
 
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("id, full_name, college_id")
+          .select("id, full_name, college_id, department_id")
           .eq("id", user.id)
           .single();
 
@@ -85,10 +87,22 @@ export default function Dashboard() {
           .maybeSingle();
         setCollegeName(collegeData?.name ?? null);
 
+        if (profile.department_id) {
+          const { data: deptData } = await supabase
+            .from("departments")
+            .select("name")
+            .eq("id", profile.department_id)
+            .maybeSingle();
+          setDepartmentName(deptData?.name ?? null);
+        } else {
+          setDepartmentName(null);
+        }
+
         const { data: studentProfiles, error: studentsError } = await supabase
           .from("profiles")
           .select("id, full_name, college_id, total_score, current_streak")
           .eq("college_id", profile.college_id)
+          .eq("department_id", profile.department_id)
           .neq("id", user.id);
 
         if (studentsError) throw studentsError;
@@ -211,7 +225,9 @@ export default function Dashboard() {
             <div className="flex items-center gap-3 pl-6 border-l border-slate-100">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-semibold text-slate-900">{facultyProfile?.full_name}</p>
-                <p className="text-xs text-slate-500">{collegeName || "Institution"}</p>
+                <p className="text-xs text-slate-500">
+                  {departmentName ? `${departmentName} Department` : collegeName || "Institution"}
+                </p>
               </div>
               <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center font-bold text-blue-600">
                 {facultyProfile?.full_name?.charAt(0)}
@@ -277,9 +293,8 @@ export default function Dashboard() {
                           <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
                             <td className="px-6 py-4">
                               <div
-                                className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
-                                  rank <= 3 ? "bg-yellow-100 text-yellow-700" : "bg-slate-100 text-slate-500"
-                                }`}
+                                className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${rank <= 3 ? "bg-yellow-100 text-yellow-700" : "bg-slate-100 text-slate-500"
+                                  }`}
                               >
                                 {rank}
                               </div>
@@ -348,9 +363,8 @@ export default function Dashboard() {
 function NavItem({ icon, label, active = false }: { icon: React.ReactNode; label: string; active?: boolean }) {
   return (
     <div
-      className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
-        active ? "bg-blue-600/10 text-blue-600 font-bold" : "text-slate-500 hover:bg-slate-50 font-medium"
-      }`}
+      className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${active ? "bg-blue-600/10 text-blue-600 font-bold" : "text-slate-500 hover:bg-slate-50 font-medium"
+        }`}
     >
       {icon}
       <span>{label}</span>
