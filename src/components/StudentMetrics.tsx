@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertCircle, Calendar, Loader2, Target, Trophy, X, Zap } from "lucide-react";
+import { AlertCircle, BarChart2, Calendar, Loader2, Target, Trophy, X, Zap } from "lucide-react";
 
 interface StudentMetricsProps {
   userId: string;
@@ -120,7 +120,7 @@ export default function StudentMetrics({ userId, fullName, onClose }: StudentMet
                 <StatCard icon={<Target className="text-blue-500" size={20} />} label="Completed" value={completed} />
                 <StatCard icon={<AlertCircle className="text-red-500" size={20} />} label="Failed" value={failed} />
                 <StatCard icon={<Zap className="text-orange-500" size={20} />} label="Streak Days" value={streakDays} />
-                <StatCard icon={<Calendar className="text-slate-600" size={20} />} label="Avg. Score" value={`${avgScore}%`} />
+                <StatCard icon={<BarChart2 className="text-slate-600" size={20} />} label="Avg. Score" value={`${avgScore}%`} />
                 <StatCard icon={<Calendar className="text-slate-600" size={20} />} label="Level" value={capitalize(currentLevel)} />
               </div>
 
