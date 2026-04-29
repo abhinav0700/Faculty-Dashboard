@@ -59,8 +59,7 @@ export default function Dashboard() {
       try {
         setLoadError(null);
         const { data: { user }, error: userError } = await supabase.auth.getUser();
-        if (userError) throw userError;
-        if (!user) {
+        if (userError || !user) {
           navigate("/login");
           return;
         }
@@ -98,12 +97,17 @@ export default function Dashboard() {
           setDepartmentName(null);
         }
 
-        const { data: studentProfiles, error: studentsError } = await supabase
+        let studentsQuery = supabase
           .from("profiles")
           .select("id, full_name, college_id, total_score, current_streak")
           .eq("college_id", profile.college_id)
-          .eq("department_id", profile.department_id)
           .neq("id", user.id);
+
+        if (profile.department_id) {
+          studentsQuery = studentsQuery.eq("department_id", profile.department_id);
+        }
+
+        const { data: studentProfiles, error: studentsError } = await studentsQuery;
 
         if (studentsError) throw studentsError;
 
