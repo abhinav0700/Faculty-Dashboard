@@ -193,7 +193,7 @@ export default function Dashboard() {
 
         <nav className="flex-1 p-4 space-y-2">
           <NavItem icon={<Users size={20} />} label="Student Body" active />
-          <NavItem icon={<Trophy size={20} />} label="Analytics" />
+          {/* <NavItem icon={<Trophy size={20} />} label="Analytics" /> */}
         </nav>
 
         <div className="p-4 border-t border-slate-100">
