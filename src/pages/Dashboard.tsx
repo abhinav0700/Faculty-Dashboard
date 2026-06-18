@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import StudentMetrics from "@/components/StudentMetrics";
 
-interface FacultyProfile {
+interface TrainerProfile {
   id: string;
   full_name: string;
   college_id: string | null;
@@ -36,6 +36,7 @@ interface UserPerformance {
 
 interface StudentRow {
   id: string;
+  employee_id: string | null;
   full_name: string;
   college_id: string | null;
   total_score: number | null;
@@ -49,9 +50,10 @@ export default function Dashboard() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<StudentRow | null>(null);
-  const [facultyProfile, setFacultyProfile] = useState<FacultyProfile | null>(null);
+  const [trainerProfile, setTrainerProfile] = useState<TrainerProfile | null>(null);
   const [collegeName, setCollegeName] = useState<string | null>(null);
   const [departmentName, setDepartmentName] = useState<string | null>(null);
+  const [isTrainer, setIsTrainer] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -64,6 +66,13 @@ export default function Dashboard() {
           return;
         }
 
+        const { data: rolesData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id);
+        const isTrainerRole = rolesData?.some(r => r.role === "trainer") || false;
+        setIsTrainer(isTrainerRole);
+
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("id, full_name, college_id, department_id")
@@ -71,20 +80,24 @@ export default function Dashboard() {
           .single();
 
         if (profileError) throw profileError;
-        setFacultyProfile(profile);
+        setTrainerProfile(profile);
 
-        if (!profile.college_id) {
+        if (!profile.college_id && !isTrainerRole) {
           setStudents([]);
           setCollegeName(null);
           return;
         }
 
-        const { data: collegeData } = await supabase
-          .from("colleges")
-          .select("name")
-          .eq("id", profile.college_id)
-          .maybeSingle();
-        setCollegeName(collegeData?.name ?? null);
+        let collegeNameStr = null;
+        if (profile.college_id) {
+          const { data: collegeData } = await supabase
+            .from("colleges")
+            .select("name")
+            .eq("id", profile.college_id)
+            .maybeSingle();
+          collegeNameStr = collegeData?.name ?? null;
+        }
+        setCollegeName(collegeNameStr);
 
         if (profile.department_id) {
           const { data: deptData } = await supabase
@@ -99,12 +112,23 @@ export default function Dashboard() {
 
         let studentsQuery = supabase
           .from("profiles")
-          .select("id, full_name, college_id, total_score, current_streak")
-          .eq("college_id", profile.college_id)
+          .select("id, employee_id, full_name, college_id, total_score, current_streak")
           .neq("id", user.id);
 
-        if (profile.department_id) {
-          studentsQuery = studentsQuery.eq("department_id", profile.department_id);
+        if (isTrainerRole) {
+          const { data: sIds, error: rpcError } = await supabase.rpc("get_student_ids");
+            
+          if (sIds && sIds.length > 0) {
+            // Splitting into chunks if necessary, but assuming < 1000 for now
+            studentsQuery = studentsQuery.in("id", sIds);
+          } else {
+            studentsQuery = studentsQuery.in("id", ['00000000-0000-0000-0000-000000000000']);
+          }
+        } else {
+          studentsQuery = studentsQuery.eq("college_id", profile.college_id);
+          if (profile.department_id) {
+            studentsQuery = studentsQuery.eq("department_id", profile.department_id);
+          }
         }
 
         const { data: studentProfiles, error: studentsError } = await studentsQuery;
@@ -196,7 +220,7 @@ export default function Dashboard() {
         </div>
 
         <nav className="flex-1 p-4 space-y-2">
-          <NavItem icon={<Users size={20} />} label="Student Body" active />
+          <NavItem icon={<Users size={20} />} label="Employee Body" active />
           {/* <NavItem icon={<Trophy size={20} />} label="Analytics" /> */}
         </nav>
 
@@ -214,7 +238,7 @@ export default function Dashboard() {
       <main className="flex-1 overflow-auto">
         <header className="h-20 bg-white border-b border-slate-200 px-6 md:px-8 flex items-center justify-between sticky top-0 z-10">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-slate-900 hidden md:block">Faculty Oversight</h1>
+            <h1 className="text-xl font-bold text-slate-900 hidden md:block">Trainer Oversight</h1>
             <div className="md:hidden bg-blue-600 p-2 rounded-lg text-white">
               <GraduationCap size={20} />
             </div>
@@ -228,13 +252,13 @@ export default function Dashboard() {
 
             <div className="flex items-center gap-3 pl-6 border-l border-slate-100">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-semibold text-slate-900">{facultyProfile?.full_name}</p>
+                <p className="text-sm font-semibold text-slate-900">{trainerProfile?.full_name}</p>
                 <p className="text-xs text-slate-500">
                   {departmentName ? `${departmentName} Department` : collegeName || "Institution"}
                 </p>
               </div>
               <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center font-bold text-blue-600">
-                {facultyProfile?.full_name?.charAt(0)}
+                {trainerProfile?.full_name?.charAt(0)}
               </div>
             </div>
           </div>
@@ -248,9 +272,9 @@ export default function Dashboard() {
               </div>
             )}
 
-            {!loadError && facultyProfile && !facultyProfile.college_id && (
+            {!loadError && trainerProfile && !trainerProfile.college_id && !isTrainer && (
               <div className="bg-amber-50 border border-amber-100 text-amber-800 text-sm p-4 rounded-xl">
-                Your account doesn’t have a `college_id` assigned yet, so there are no students to show.
+                Your account doesn’t have a `college_id` assigned yet, so there are no employees to show.
               </div>
             )}
 
@@ -259,7 +283,7 @@ export default function Dashboard() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input
                   type="text"
-                  placeholder="Search students by name..."
+                  placeholder="Search employees by name..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 outline-none transition-all"
@@ -269,7 +293,7 @@ export default function Dashboard() {
 
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
               <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                <h2 className="font-bold text-slate-900">Registered Students</h2>
+                <h2 className="font-bold text-slate-900">Registered Employees</h2>
                 <span className="bg-slate-100 px-3 py-1 rounded-full text-xs font-semibold text-slate-500 uppercase tracking-widest">
                   {students.length} Total
                 </span>
@@ -281,7 +305,7 @@ export default function Dashboard() {
                     <thead>
                       <tr className="bg-slate-50/50 text-slate-500 text-xs font-bold uppercase tracking-wider">
                         <th className="px-6 py-4">Rank</th>
-                        <th className="px-6 py-4">Student Name</th>
+                        <th className="px-6 py-4">Employee Name</th>
                         <th className="px-6 py-4">Total Score</th>
                         <th className="px-6 py-4">Streak</th>
                         <th className="px-6 py-4 text-right">Actions</th>
@@ -307,7 +331,7 @@ export default function Dashboard() {
                               <div className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors cursor-default">
                                 {student.full_name}
                               </div>
-                              <div className="text-xs text-slate-500">ID: {student.id.slice(0, 8)}</div>
+                              <div className="text-xs text-slate-500">ID: {student.employee_id || student.id.slice(0, 8)}</div>
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-2">
@@ -344,7 +368,7 @@ export default function Dashboard() {
               ) : (
                 <div className="p-20 flex flex-col items-center justify-center text-slate-400">
                   <SearchX size={48} className="mb-4 stroke-1 opacity-50" />
-                  <p className="text-lg font-medium text-slate-500">No students found matching your search</p>
+                  <p className="text-lg font-medium text-slate-500">No employees found matching your search</p>
                   <p className="text-sm">Try adjusting your search term</p>
                 </div>
               )}

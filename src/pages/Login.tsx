@@ -31,10 +31,10 @@ export default function Login() {
 
       if (roleError) throw roleError;
 
-      const isFaculty = roles?.some((r) => r.role === "faculty" || r.role === "admin");
-      if (!isFaculty) {
+      const isTrainer = roles?.some((r) => r.role === "trainer" || r.role === "faculty" || r.role === "admin");
+      if (!isTrainer) {
         await supabase.auth.signOut();
-        setError("Unauthorized. This dashboard is for faculty members only.");
+        setError("Unauthorized. This dashboard is for trainers only.");
         return;
       }
 
@@ -53,7 +53,7 @@ export default function Login() {
           <div className="bg-white/20 p-4 rounded-xl backdrop-blur-sm mb-4">
             <GraduationCap size={40} />
           </div>
-          <h1 className="text-2xl font-bold">JobReady Faculty</h1>
+          <h1 className="text-2xl font-bold">JobReady Trainer</h1>
           <p className="text-blue-100 text-sm mt-1 text-center">Institutional Oversight Dashboard</p>
         </div>
 
@@ -76,7 +76,7 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
-                  placeholder="faculty@institute.edu"
+                  placeholder="trainer@institute.edu"
                 />
               </div>
             </div>

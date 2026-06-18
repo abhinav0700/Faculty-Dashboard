@@ -110,7 +110,7 @@ export default function StudentMetrics({ userId, fullName, onClose }: StudentMet
                   <AlertCircle className="shrink-0 mt-0.5" size={18} />
                   <div>
                     <p className="text-sm font-semibold text-slate-800">No performance data yet</p>
-                    <p className="text-xs text-slate-500">This student hasn’t generated metrics in the system.</p>
+                    <p className="text-xs text-slate-500">This employee hasn’t generated metrics in the system.</p>
                   </div>
                 </div>
               )}
