@@ -5,6 +5,7 @@ import { AlertCircle, BarChart2, Calendar, Loader2, Target, Trophy, X, Zap } fro
 interface StudentMetricsProps {
   userId: string;
   fullName: string;
+  currentStreak: number;
   onClose: () => void;
 }
 
@@ -20,7 +21,7 @@ interface UserPerformance {
   updated_at: string | null;
 }
 
-export default function StudentMetrics({ userId, fullName, onClose }: StudentMetricsProps) {
+export default function StudentMetrics({ userId, fullName, currentStreak, onClose }: StudentMetricsProps) {
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<UserPerformance | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -62,31 +63,28 @@ export default function StudentMetrics({ userId, fullName, onClose }: StudentMet
   const completed = metrics?.tasks_completed ?? 0;
   const failed = metrics?.tasks_failed ?? 0;
   const avgScore = metrics?.avg_score ?? 0;
-  const streakDays = metrics?.streak_days ?? 0;
+  const streakDays = currentStreak;
   const currentLevel = metrics?.current_level ?? "beginner";
-  const lastTaskCompletedAt = metrics?.last_task_completed_at;
-  const updatedAt = metrics?.updated_at;
 
   return (
     <div
-      className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label={`${fullName} performance metrics`}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300"
+        className="bg-card rounded-2xl shadow-elevated border border-border/60 w-full max-w-4xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-6 border-b border-slate-100">
+        <div className="flex items-center justify-between p-6 border-b border-border/40">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">{fullName}</h2>
-            <p className="text-sm text-slate-500">Performance Overview</p>
+            <h2 className="text-xl font-bold font-heading text-foreground">{fullName}</h2>
+            <p className="text-sm text-muted-foreground">Detailed Performance Overview</p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-400 hover:text-slate-600"
+            className="p-2 hover:bg-card-hover rounded-lg transition-colors text-muted-foreground hover:text-foreground"
           >
             <X size={20} />
           </button>
@@ -94,45 +92,54 @@ export default function StudentMetrics({ userId, fullName, onClose }: StudentMet
 
         <div className="p-6">
           {loading ? (
-            <div className="h-80 flex flex-col items-center justify-center text-slate-400">
+            <div className="h-80 flex flex-col items-center justify-center text-muted-foreground">
               <Loader2 className="animate-spin mb-4" size={32} />
               <p>Loading performance metrics...</p>
             </div>
           ) : error ? (
-            <div className="h-80 flex flex-col items-center justify-center text-red-500">
-              <AlertCircle className="mb-4" size={32} />
-              <p>Error loading metrics: {error}</p>
+            <div className="h-80 flex flex-col items-center justify-center text-center">
+              <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4 text-destructive shadow-glow">
+                <AlertCircle size={32} />
+              </div>
+              <p className="text-foreground font-medium mb-1">Failed to load metrics</p>
+              <p className="text-sm text-muted-foreground">{error}</p>
+            </div>
+          ) : !hasMetrics ? (
+            <div className="h-80 flex flex-col items-center justify-center text-center">
+              <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mb-4 text-muted-foreground">
+                <BarChart2 size={32} />
+              </div>
+              <p className="text-foreground font-medium mb-1">No metrics available</p>
+              <p className="text-sm text-muted-foreground">This employee hasn't generated metrics in the system.</p>
             </div>
           ) : (
-            <div className="space-y-6">
-              {!hasMetrics && (
-                <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200 text-slate-600">
-                  <AlertCircle className="shrink-0 mt-0.5" size={18} />
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">No performance data yet</p>
-                    <p className="text-xs text-slate-500">This employee hasn’t generated metrics in the system.</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <StatCard icon={<Trophy className="text-yellow-500" size={20} />} label="Total Score" value={totalScore} />
-                <StatCard icon={<Target className="text-blue-500" size={20} />} label="Completed" value={completed} />
-                <StatCard icon={<AlertCircle className="text-red-500" size={20} />} label="Failed" value={failed} />
-                <StatCard icon={<Zap className="text-orange-500" size={20} />} label="Streak Days" value={streakDays} />
-                <StatCard icon={<BarChart2 className="text-slate-600" size={20} />} label="Avg. Score" value={`${avgScore}%`} />
-                <StatCard icon={<Calendar className="text-slate-600" size={20} />} label="Level" value={capitalize(currentLevel)} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-2 gap-4">
+                <MetricCard icon={<Trophy className="text-warning" />} label="Total Score" value={totalScore} highlight="text-warning" />
+                <MetricCard icon={<Target className="text-primary" />} label="Avg Task Score" value={`${avgScore}/100`} highlight="text-primary" />
+                <MetricCard icon={<Zap className="text-accent" />} label="Current Streak" value={`${streakDays} Days`} highlight="text-accent" />
+                <MetricCard icon={<BarChart2 className="text-success" />} label="Current Level" value={currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1)} highlight="text-success" />
               </div>
 
-              <div className="bg-blue-50 rounded-lg border border-blue-100 p-4 text-sm text-slate-700 space-y-1">
-                <p>
-                  <span className="font-semibold">Last Task Completed:</span>{" "}
-                  {lastTaskCompletedAt ? new Date(lastTaskCompletedAt).toLocaleString() : "—"}
-                </p>
-                <p>
-                  <span className="font-semibold">Metrics Updated:</span>{" "}
-                  {updatedAt ? new Date(updatedAt).toLocaleString() : "—"}
-                </p>
+              <div className="bg-card rounded-xl border border-border/40 p-6 shadow-soft flex flex-col justify-center relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-[40px] -z-10" />
+                <h3 className="text-sm font-semibold text-foreground mb-4 font-heading">Task Completion Rate</h3>
+                
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-muted-foreground">Completed Successfully</span>
+                  <span className="font-bold text-success">{completed}</span>
+                </div>
+                <div className="w-full h-2 bg-border rounded-full mb-4 overflow-hidden">
+                  <div className="h-full bg-success rounded-full" style={{ width: `${Math.max(5, (completed / Math.max(1, completed + failed)) * 100)}%` }} />
+                </div>
+
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-muted-foreground">Failed / Skipped</span>
+                  <span className="font-bold text-destructive">{failed}</span>
+                </div>
+                <div className="w-full h-2 bg-border rounded-full overflow-hidden">
+                  <div className="h-full bg-destructive rounded-full" style={{ width: `${Math.max(5, (failed / Math.max(1, completed + failed)) * 100)}%` }} />
+                </div>
               </div>
             </div>
           )}
@@ -142,20 +149,16 @@ export default function StudentMetrics({ userId, fullName, onClose }: StudentMet
   );
 }
 
-function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number }) {
+function MetricCard({ icon, label, value, highlight }: { icon: React.ReactNode, label: string, value: string | number, highlight: string }) {
   return (
-    <div className="bg-white border border-slate-100 p-4 rounded-xl shadow-sm">
-      <div className="flex items-center gap-2 mb-2">
-        {icon}
-        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{label}</span>
+    <div className="bg-background rounded-xl p-5 border border-border/40 flex flex-col justify-between hover-magnetic">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`p-2 rounded-lg bg-card border border-border/50 shadow-soft`}>{icon}</div>
       </div>
-      <div className="text-2xl font-bold text-slate-900">{value}</div>
+      <div>
+        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">{label}</p>
+        <p className={`text-2xl font-bold font-heading ${highlight}`}>{value}</p>
+      </div>
     </div>
   );
 }
-
-function capitalize(value: string) {
-  if (!value) return value;
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
