@@ -25,9 +25,10 @@ interface SidebarProps {
   atRiskCount: number;
   currentView: 'overview' | 'all' | 'at-risk';
   onViewChange: (view: 'overview' | 'all' | 'at-risk') => void;
+  onLogout: () => void;
 }
 
-export default function Sidebar({ trainerName, trainerRole, traineeCount, tracksCount, avgScore, atRiskCount, currentView, onViewChange }: SidebarProps) {
+export default function Sidebar({ trainerName, trainerRole, traineeCount, tracksCount, avgScore, atRiskCount, currentView, onViewChange, onLogout }: SidebarProps) {
   return (
     <aside className="w-[220px] bg-card border-r border-border/40 flex flex-col h-screen shrink-0 sticky top-0">
       <div className="p-5 pb-6 flex items-center gap-3">
@@ -54,14 +55,23 @@ export default function Sidebar({ trainerName, trainerRole, traineeCount, tracks
 
       {/* Trainer Card */}
       <div className="p-4 border-t border-border/40 bg-card">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center font-bold text-white text-sm">
-            {trainerName.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase()}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center font-bold text-white text-sm flex-shrink-0">
+              {trainerName.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-sm truncate">{trainerName}</div>
+              <div className="text-xs text-muted-foreground truncate">{trainerRole}</div>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-semibold text-sm truncate">{trainerName}</div>
-            <div className="text-xs text-muted-foreground truncate">{trainerRole}</div>
-          </div>
+          <button 
+            onClick={onLogout}
+            className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors flex-shrink-0"
+            title="Logout"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+          </button>
         </div>
         <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-border/30 text-center">
           <div>
