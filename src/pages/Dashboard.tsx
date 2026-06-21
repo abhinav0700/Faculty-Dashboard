@@ -87,8 +87,15 @@ export default function Dashboard() {
           .neq("id", user.id);
 
         if (isTrainerRole) {
-          const { data: sIds } = await supabase.rpc("get_student_ids");
-          if (sIds && sIds.length > 0) {
+          // Fetch assigned students for this trainer
+          const { data: assignments } = await supabase
+            .from("faculty_student_assignments")
+            .select("student_id")
+            .eq("faculty_id", user.id);
+
+          const sIds = assignments?.map(a => a.student_id) || [];
+          
+          if (sIds.length > 0) {
             studentsQuery = studentsQuery.in("id", sIds);
           } else {
             studentsQuery = studentsQuery.in("id", ['00000000-0000-0000-0000-000000000000']);
